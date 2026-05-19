@@ -1,5 +1,6 @@
 import pygame as pg
 import sys
+import random
 
 # 画面サイズ
 WIDTH = 800
@@ -23,9 +24,9 @@ JUMP_POWER = -15
 class Player:
     def __init__(self):
 
-        self.image = pg.Surface((40, 50))
-        self.image.fill(BLUE)
-
+        self.image = pg.image.load("ex5/photo/3.png").convert_alpha()
+        self.image = pg.transform.scale(self.image, (40, 50))
+        self.image = pg.transform.flip(self.image, True, False)
         self.rect = self.image.get_rect()
 
         self.rect.x = 100
@@ -100,19 +101,16 @@ class Block:
 class Enemy:
     def __init__(self, x, y):
 
-        self.rect = pg.Rect(x, y, 40, 40)
+        self.image = pg.image.load("ex5/photo/kyomutomato.png").convert_alpha()
+        self.image = pg.transform.scale(self.image, (50, 50))
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
 
     def draw(self, screen, scroll_x):
-
-        pg.draw.rect(
-            screen,
-            RED,
-            (
-                self.rect.x - scroll_x,
-                self.rect.y,
-                self.rect.width,
-                self.rect.height
-            )
+        screen.blit(
+            self.image,
+            (self.rect.x - scroll_x, self.rect.y)
         )
 
 
@@ -170,10 +168,11 @@ def reset_game():
     ]
 
     # 敵
-    enemies = [
-        Enemy(850, 260),
-        Enemy(1200, 460),
-    ]
+    enemies = []
+    for i in range(5):
+        x = random.randint(300, 2200)
+        y = random.choice([260, 460])
+        enemies.append(Enemy(x, y))
 
     # ゴール旗
     goal = Goal(2200, 380)
@@ -196,6 +195,7 @@ def main():
 
     # 初期化
     player, blocks, enemies, goal, scroll_x = reset_game()
+    score = 0
 
     # ゲーム状態
     game_start = False
@@ -272,7 +272,7 @@ def main():
                     ):
 
                         enemies.remove(enemy)
-
+                        score += 100
                         # 跳ねる
                         player.vy = -10
 
@@ -296,6 +296,9 @@ def main():
 
             # プレイヤー描画
             player.draw(screen, scroll_x)
+
+            #敵討伐スコア
+            draw_text(screen,f"SCORE : {score}",40,20,20)
 
         # ゲームオーバー
         elif game_over:
