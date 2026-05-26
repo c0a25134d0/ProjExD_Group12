@@ -322,7 +322,6 @@ def main():
                         # 跳ねる
                         player.vy = -10
                     else:
-                        life.num -= 1
                         if state != "active":
                             life.num -= 1
                             if life.num <= 0:
