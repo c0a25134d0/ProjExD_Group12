@@ -100,9 +100,19 @@ class Block:
 class Press:
     def __init__(self, x, y, w, h):
         self.rect = pg.Rect(x, y, w, h)
+    
+    def draw(self, screen, scroll_x):
 
-    def update(self, screen: pg.Surface, block):
-        block.kill()
+        pg.draw.rect(
+            screen,
+            GREEN,
+            (
+                self.rect.x - scroll_x,
+                self.rect.y,
+                self.rect.width,
+                self.rect.height
+            )
+        )
 
 
 
@@ -179,9 +189,7 @@ def reset_game():
     ]
 
     # 仕掛け地面
-    block = Block(400, 400, 200, 30)
-    if block.colliderect(player):
-        block
+    press = Press(400, 400, 200, 30)
 
     # 敵
     enemies = [
@@ -300,6 +308,10 @@ def main():
             # 地面描画
             for block in blocks:
                 block.draw(screen, scroll_x)
+
+            if player.on_ground and player.rect.bottom == block.rect.top and player.rect.right > block.rect.left and player.rect.left < block.rect.right:
+                block.rect.y += 2
+                player.rect.y += 2
 
             # 敵描画
             for enemy in enemies:
