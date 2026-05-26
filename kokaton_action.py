@@ -3,6 +3,8 @@ import os
 import pygame as pg
 import sys
 import random
+import os
+import time
 
 # 画面サイズ
 WIDTH = 800
@@ -22,7 +24,7 @@ GRAVITY = 0.8
 # ジャンプ力
 JUMP_POWER = -15
 
-
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 class Player:
     def __init__(self):
         self.image = pg.Surface((40, 50))
@@ -151,7 +153,7 @@ class Score:
         self.value = 0
         self.image = self.font.render(f"Score: {self.value}", 0, self.color)
         self.rect = self.image.get_rect()
-        self.rect.center = 100, HEIGHT-550
+        self.rect.center = 100, HEIGHT-570
 
     def update(self, screen: pg.Surface, game_start, game_over, game_clear):
         if not game_start:
@@ -160,10 +162,27 @@ class Score:
         if game_over or game_clear:  # ゲーム中とゲーム後のScoreの位置の変化
             self.rect.center = 370, 400
         else:
-            self.rect.center = 100, HEIGHT-550
+            self.rect.center = 100, HEIGHT-570
 
         self.image = self.font.render(f"Score: {self.value}", 0, self.color)
         screen.blit(self.image, self.rect)
+
+
+class Item:
+    """
+    アイテムの位置を設定しているクラス
+    引数 x(x座標), y(y座標)でアイテムの位置を指定する
+    
+    """
+    def __init__(self, x, y):
+        self.image = pg.Surface((20, 20))
+        pg.draw.circle(self.image, (0, 255, 230), (10, 10), 10)
+        self.image.set_colorkey((0, 0, 0))
+        self.rect = self.image.get_rect()
+        self.rect.x, self.rect.y = x, y
+            
+    def draw(self, screen, scroll_x):
+        screen.blit(self.image,(self.rect.x-scroll_x,self.rect.y))
 
 
 def draw_text(screen, text, size, x, y, color=BLACK):
@@ -171,6 +190,13 @@ def draw_text(screen, text, size, x, y, color=BLACK):
     img = font.render(text, True, color)
     rect = img.get_rect(center=(x, y))
     screen.blit(img, rect)
+
+
+def draw_text_J(screen, text, size, x, y, color=BLACK):
+    font = pg.font.SysFont("Meiryo", size)
+    img = font.render(text, True, color)
+    screen.blit(img, (x, y))
+
 
 def reset_game():
     # プレイヤー
@@ -195,11 +221,14 @@ def reset_game():
         enemies.append(Enemy(x, y))
 
 
+    # アイテム
+    items = [Item(400, 380),]
+
     # ゴール旗
     goal = Goal(2200, 380)
     # スクロール量
     scroll_x = 0
-    return player, blocks, enemies, goal, scroll_x
+    return player, blocks, enemies, items, goal, scroll_x
 
 def main():
     pg.init()
@@ -209,8 +238,8 @@ def main():
     clock = pg.time.Clock()
 
     # 初期化
-    player, blocks, enemies, goal, scroll_x = reset_game()
     score = 0
+    player, blocks, enemies, items, goal, scroll_x = reset_game()
 
     # ゲーム状態
     game_start = False
@@ -218,7 +247,7 @@ def main():
     game_clear = False
     game_miss = False
 
-    score = Score(game_start, game_over, game_clear)
+    score = Score(game_start, game_over, game_clear)  
 
     #  Soundを持ってくる
     snd1 = pg.mixer.Sound("./sound/アヒルが大笑い.mp3")
@@ -239,18 +268,22 @@ def main():
                         game_start = True
                     # ミス後の再開
                     elif game_miss:
-                        player, blocks, enemies, goal, scroll_x = reset_game()
+                        player, blocks, enemies, items, goal, scroll_x = reset_game()
                         game_miss = False
                         game_start = True
                     # リスタート
                     elif game_over or game_clear:
-                        player, blocks, enemies, goal, scroll_x = reset_game()
+                        # player, blocks, enemies, goal, scroll_x = reset_game()
                         life.num = 3
+
+                        player, blocks, enemies, items, goal, scroll_x = reset_game()
+
                         game_over = False
                         game_clear = False
                         game_start = False
                         score.value = 0  # スコアをリセット
 
+                        state = "inactive"  # 初期状態はinactive
         # 背景
         screen.fill(WHITE)
 
@@ -290,12 +323,46 @@ def main():
                         player.vy = -10
                     else:
                         life.num -= 1
-                        if life.num <= 0:
-                            snd2.play()
-                            game_over = True
-                        else:
-                            snd2.play()
-                            game_miss = True
+                        if state != "active":
+                            life.num -= 1
+                            if life.num <= 0:
+                                snd2.play()
+                                game_over = True
+                            else:
+                                snd2.play()
+                                game_miss = True
+
+                        # if state != "active":
+                        #     game_over = True
+
+            now = int(time.time())  # 現在の時間を取得    
+            
+            # アイテム判定
+            # アイテムを拾った時、無敵状態となるようにする
+            for item in items[:]:
+                # for文の外で使えるように変数をここで定義
+                end = 0   # アイテムの効果終了時間を保管 
+                s_time = 0  # アイテムの効果開始時間を保管
+                state = ""   # アイテムが効果中か否かの状態を示す
+
+                if player.rect.colliderect(item.rect):  # プレイヤーとアイテムの衝突判定
+                    items.remove(item)
+                    s_time = int(time.time())  # 現在の時間を一度保存
+                    end = s_time + 5  # 五秒後にアイテムの効果が切れるように調整
+                    state = "active"  # アイテムをとった時active状態にする    
+                
+            l_time = end - now 
+            
+            if state == "active":
+                draw_text_J(screen, f"効果時間:{l_time}秒", 20, 30, 50, (0,255,255)) 
+            
+            if now >= end:  # アイテムの効果時間が切れたらinactiveに戻す
+                draw_text_J(screen, "効果時間:0秒", 20, 30, 50, BLACK)
+                state = "inactive"
+
+            # アイテム描画 
+            for item in items:
+                item.draw(screen, scroll_x)
 
             # ゴール判定
             if player.rect.colliderect(goal.rect):
