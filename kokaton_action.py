@@ -2,6 +2,7 @@ import math
 import os
 import pygame as pg
 import sys
+import random
 
 # 画面サイズ
 WIDTH = 800
@@ -26,6 +27,9 @@ class Player:
     def __init__(self):
         self.image = pg.Surface((40, 50))
         self.image.fill(BLUE)
+        self.image = pg.image.load("photo/3.png").convert_alpha()
+        self.image = pg.transform.scale(self.image, (40, 50))
+        self.image = pg.transform.flip(self.image, True, False)
         self.rect = self.image.get_rect()
         self.rect.x = 100
         self.rect.y = 400
@@ -74,8 +78,17 @@ class Enemy:
     def __init__(self, x, y):
         self.rect = pg.Rect(x, y, 40, 40)
 
+        self.image = pg.image.load("photo/kyomutomato.png").convert_alpha()
+        self.image = pg.transform.scale(self.image, (50, 50))
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+
     def draw(self, screen, scroll_x):
-        pg.draw.rect(screen, RED, (self.rect.x - scroll_x, self.rect.y, self.rect.width, self.rect.height))
+        screen.blit(
+            self.image,
+            (self.rect.x - scroll_x, self.rect.y)
+        )
 
 
 class Goal:
@@ -137,10 +150,14 @@ def reset_game():
         Block(1200, 350, 200, 30),
     ]
     # 敵
-    enemies = [
-        Enemy(850, 260),
-        Enemy(1200, 460),
-    ]
+
+    enemies = []
+    for i in range(5):
+        x = random.randint(300, 2200)
+        y = random.choice([260, 460])
+        enemies.append(Enemy(x, y))
+
+
     # ゴール旗
     goal = Goal(2200, 380)
     # スクロール量
@@ -156,6 +173,8 @@ def main():
 
     # 初期化
     player, blocks, enemies, goal, scroll_x = reset_game()
+    score = 0
+
     # ゲーム状態
     game_start = False
     game_over = False
@@ -217,6 +236,7 @@ def main():
                     # 上から踏んだ
                     if (player.vy > 0 and player.rect.bottom < enemy.rect.centery):
                         enemies.remove(enemy)
+                        score += 100
                         # 跳ねる
                         player.vy = -10
                     else:
@@ -239,6 +259,10 @@ def main():
             goal.draw(screen, scroll_x)
             # プレイヤー描画
             player.draw(screen, scroll_x)
+
+            #敵討伐スコア
+            draw_text(screen,f"SCORE : {score}",40,100,20)
+
         # ゲームオーバー
         elif game_over:
             draw_text(screen, "GAME OVER", 80, WIDTH // 2, 220, RED)
