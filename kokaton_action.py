@@ -220,6 +220,11 @@ def main():
 
     score = Score(game_start, game_over, game_clear)
 
+    #  Soundを持ってくる
+    snd1 = pg.mixer.Sound("./sound/アヒルが大笑い.mp3")
+    snd2 = pg.mixer.Sound("./sound/足首がグキッ.mp3")
+    snd3 = pg.mixer.Sound("./sound/歓声と拍手.mp3")
+
     while True:
         keys = pg.key.get_pressed()
 
@@ -266,12 +271,11 @@ def main():
             if player.rect.y > HEIGHT:
                 life.num -= 1
 
-                snd = pg.mixer.Sound("../sound/アヒルが大笑い.mp3")
                 if life.num <= 0:
-                    snd.play()
+                    snd1.play()
                     game_over = True
                 else:
-                    snd.play()
+                    snd1.play()
                     game_miss = True
             # 敵判定
             for enemy in enemies[:]:
@@ -287,12 +291,15 @@ def main():
                     else:
                         life.num -= 1
                         if life.num <= 0:
+                            snd2.play()
                             game_over = True
                         else:
+                            snd2.play()
                             game_miss = True
 
             # ゴール判定
             if player.rect.colliderect(goal.rect):
+                snd3.play()
                 game_clear = True
             # 地面描画
             for block in blocks:
